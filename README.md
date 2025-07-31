@@ -99,6 +99,31 @@ src/
 
 A brief overview of the key directories in the frontend application:
 
+### New Features Added
+- **Consent Management Utilities** (`src/utils/consentHelpers.js`)
+  - Validation functions for consent requests
+  - Formatting utilities for consent records
+  - ID generation and expiry checking
+  - Permission formatting helpers
+
+- **Consent Statistics Component** (`src/components/ConsentStats.js`)
+  - Real-time analytics dashboard
+  - Visual progress bars and metrics
+  - Status-based filtering and display
+  - Responsive design with Tailwind CSS
+
+- **Notification Service** (`src/services/notificationService.js`)
+  - Browser notification support
+  - Real-time alerts for consent events
+  - Customizable notification types
+  - Click handlers and auto-dismissal
+
+- **Consent State Management Hook** (`src/hooks/useConsent.js`)
+  - Comprehensive consent CRUD operations
+  - State management with React hooks
+  - Error handling and loading states
+  - Integration with notification service
+
 ```
 src/
 ├── api/             # Functions for interacting with the backend API
