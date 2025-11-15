@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "consentchain",
   "builds": [
     {
       "src": "package.json",
@@ -11,10 +10,7 @@
     },
     {
       "src": "server/index.js",
-      "use": "@vercel/node",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -40,11 +36,5 @@
     "REACT_APP_ALGORAND_NETWORK": "testnet",
     "REACT_APP_ALGORAND_APP_ID": "749685949",
     "REACT_APP_ALGOD_SERVER": "https://testnet-api.algonode.cloud"
-  },
-  "functions": {
-    "server/index.js": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
   }
 }
