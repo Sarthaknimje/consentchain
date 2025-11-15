@@ -4,7 +4,7 @@ import { WalletProvider } from './context/WalletContext';
 import { ProfileProvider } from './context/ProfileContext';
 
 // Pages
-import Documents from './pages/Documents';
+import Documents from './components/Documents.js';
 import ConsentsPage from './pages/ConsentsPage';
 import TelegramBotPage from './pages/TelegramBotPage';
 import HomePage from './pages/HomePage'; // Assuming Vision and PremiumShowcase are part of a HomePage

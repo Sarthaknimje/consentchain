@@ -1,4 +1,4 @@
-import algosdk from 'algosdk/dist/esm/index.js';
+import algosdk from 'algosdk';
 
 // Algorand Testnet node (Algonode)
 const algodToken = '';
@@ -7,7 +7,7 @@ const algodPort = '';
 const algodClient = new algosdk.Algodv2(algodToken, algodServer, algodPort);
 
 // Replace with your deployed app ID
-const APP_ID = 740703196;
+const APP_ID = 749685949; // ✅ Deployed on TestNet
 
 // Helper function to convert string to Uint8Array
 function stringToUint8Array(str) {

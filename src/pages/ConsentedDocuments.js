@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { getConsentRequests, updateConsentRequest } from '../services/consentService';
 import { getFromIPFS, getIPFSGatewayURL } from '../services/ipfsService';
+import { revokeConsentWithPera } from '../services/peraWalletConsentService';
+import { canViewDocument, isConsentExpired, isConsentRevoked, getConsentStatusDisplay, getRemainingTime } from '../utils/consentValidator';
 import { formatDistanceToNow } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 import { DocumentTextIcon, XMarkIcon, DocumentDuplicateIcon, ClockIcon, UserIcon, IdentificationIcon, ExclamationTriangleIcon, EyeIcon, CalendarIcon, ArrowsPointingInIcon, ArrowsPointingOutIcon, PhotoIcon, TableCellsIcon, PresentationChartLineIcon, ArrowTopRightOnSquareIcon, ArrowUpTrayIcon, ShieldExclamationIcon, ArrowDownTrayIcon, CheckCircleIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
@@ -14,7 +16,7 @@ const truncateAddress = (address) => {
 };
 
 const ConsentedDocuments = () => {
-  const { address } = useWallet();
+  const { address, peraWallet } = useWallet();
   const [consentedDocuments, setConsentedDocuments] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [viewMode, setViewMode] = useState('list');
@@ -31,66 +33,77 @@ const ConsentedDocuments = () => {
   const navigate = useNavigate();
   const previewRef = useRef(null);
 
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      if (!address) return;
+  const fetchDocuments = async () => {
+    if (!address) return;
+    
+    try {
+      setIsLoading(true);
+      // Fetch both sent and received requests
+      const [sentRequests, receivedRequests] = await Promise.all([
+        getConsentRequests(address, 'sender'),
+        getConsentRequests(address, 'recipient')
+      ]);
       
-      try {
-        setIsLoading(true);
-        // Fetch both sent and received requests
-        const [sentRequests, receivedRequests] = await Promise.all([
-          getConsentRequests(address, 'sender'),
-          getConsentRequests(address, 'recipient')
-        ]);
+      // Combine and filter granted requests
+      const allRequests = [...sentRequests, ...receivedRequests];
+      const grantedRequests = allRequests.filter(req => {
+        // Check if user is part of consent
+        const isParticipant = req.sender === address || req.recipient === address;
+        if (!isParticipant) return false;
         
-        // Combine and filter granted requests
-        const allRequests = [...sentRequests, ...receivedRequests];
-        const grantedRequests = allRequests.filter(req => 
-          req.status === 'granted' && 
-          (req.sender === address || req.recipient === address)
-        );
+        // Check if status is granted
+        if (req.status !== 'granted') return false;
         
-        // Sort requests by granted date (newest first)
-        const sortedRequests = grantedRequests.sort((a, b) => {
-          const dateA = new Date(a.grantedAt || a.updatedAt);
-          const dateB = new Date(b.grantedAt || b.updatedAt);
-          return dateB - dateA;
-        });
+        // Check if not expired or revoked
+        if (isConsentRevoked(req) || isConsentExpired(req)) {
+          return false; // Hide expired/revoked consents
+        }
+        
+        return true;
+      });
+      
+      // Sort requests by granted date (newest first)
+      const sortedRequests = grantedRequests.sort((a, b) => {
+        const dateA = new Date(a.grantedAt || a.updatedAt);
+        const dateB = new Date(b.grantedAt || b.updatedAt);
+        return dateB - dateA;
+      });
 
-        // Ensure documents are populated
-        const populatedRequests = await Promise.all(
-          sortedRequests.map(async (request) => {
-            if (request.documents && request.documents.length > 0) {
-              // If documents are already populated, return as is
-              if (typeof request.documents[0] === 'object') {
-                return request;
-              }
-              // Otherwise, fetch document details
-              try {
-                const response = await fetch(`/api/consent/${request.requestId}/documents`);
-                const data = await response.json();
-                return {
-                  ...request,
-                  documents: data.documents
-                };
-              } catch (error) {
-                console.error('Error fetching document details:', error);
-                return request;
-              }
+      // Ensure documents are populated
+      const populatedRequests = await Promise.all(
+        sortedRequests.map(async (request) => {
+          if (request.documents && request.documents.length > 0) {
+            // If documents are already populated, return as is
+            if (typeof request.documents[0] === 'object') {
+              return request;
             }
-            return request;
-          })
-        );
-        
-        setConsentedDocuments(populatedRequests);
-      } catch (err) {
-        console.error('Error fetching documents:', err);
-        setError('Failed to load documents');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+            // Otherwise, fetch document details
+            try {
+              const response = await fetch(`/api/consent/${request.requestId}/documents`);
+              const data = await response.json();
+              return {
+                ...request,
+                documents: data.documents
+              };
+            } catch (error) {
+              console.error('Error fetching document details:', error);
+              return request;
+            }
+          }
+          return request;
+        })
+      );
+      
+      setConsentedDocuments(populatedRequests);
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      setError('Failed to load documents');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchDocuments();
   }, [address]);
 
@@ -136,38 +149,60 @@ const ConsentedDocuments = () => {
   }, [selectedDocument]);
 
   const handleRevokeConsent = async (requestId) => {
+    const toastId = toast.loading('Revoking consent...');
+    
     try {
-      // Update the request status in the backend
+      // ✅ STEP 1: Revoke on blockchain first
+      try {
+        toast.loading('📱 Opening Pera Wallet to revoke on blockchain...', { id: toastId });
+        
+        if (!peraWallet) {
+          console.warn('Pera Wallet not connected, skipping blockchain revocation');
+          toast.loading('💾 Revoking in database...', { id: toastId });
+        } else {
+          // Call smart contract to revoke consent on-chain
+          const txId = await revokeConsentWithPera({
+            sender: address,
+            peraWallet: peraWallet
+          });
+          
+          console.log('✅ Blockchain revocation transaction:', txId);
+          toast.success('✅ Revoked on blockchain!', { id: toastId });
+        }
+      } catch (blockchainError) {
+        console.error('Blockchain error:', blockchainError);
+        toast.error('⚠️ Blockchain revocation failed, continuing with database...', { id: toastId });
+      }
+
+      // ✅ STEP 2: Update the request status in the backend
+      toast.loading('💾 Updating database...', { id: toastId });
       await updateConsentRequest(requestId, {
         status: 'revoked',
         revokedAt: new Date().toISOString()
       });
 
-      // Update local state
+      // ✅ STEP 3: Remove from local state (document no longer visible)
       setConsentedDocuments(prev => 
-        prev.map(doc => 
-          doc.requestId === requestId 
-            ? { ...doc, status: 'revoked' }
-            : doc
-        )
+        prev.filter(doc => doc.requestId !== requestId)
       );
 
+      // Close any open document views
+      if (selectedDocument) {
+        setSelectedDocument(null);
+        setViewMode('list');
+      }
+
+      toast.success('🎉 Consent revoked! Documents are no longer accessible.', { 
+        id: toastId, 
+        duration: 5000 
+      });
+      
       // Refresh the documents list
-      const [sentRequests, receivedRequests] = await Promise.all([
-        getConsentRequests(address, 'sender'),
-        getConsentRequests(address, 'recipient')
-      ]);
-      
-      const allRequests = [...sentRequests, ...receivedRequests];
-      const grantedRequests = allRequests.filter(req => 
-        req.status === 'granted' && 
-        (req.sender === address || req.recipient === address)
-      );
-      
-      setConsentedDocuments(grantedRequests);
+      await fetchDocuments();
     } catch (err) {
       console.error('Error revoking consent:', err);
       setError('Failed to revoke consent');
+      toast.error('❌ Failed to revoke consent', { id: toastId });
     }
   };
 
@@ -208,7 +243,17 @@ const ConsentedDocuments = () => {
   };
 
   const handleViewDocument = (document) => {
+    // ✅ STEP 1: Check if consent is valid (not expired or revoked)
+    const validation = canViewDocument(document, address);
+    if (!validation.canView) {
+      toast.error(`❌ Cannot view document: ${validation.reason}`);
+      handleSecurityViolation('view');
+      return;
+    }
+
+    // ✅ STEP 2: Check permissions
     if (!document.permissions?.view) {
+      toast.error('❌ You do not have view permission for this document');
       handleSecurityViolation('view');
       return;
     }
@@ -222,11 +267,13 @@ const ConsentedDocuments = () => {
       name: docToView.name || document.documentName,
       type: docToView.type || document.documentType,
       ipfsHash: docToView.ipfsHash || document.ipfsHash,
-      size: docToView.size || document.documentSize
+      size: docToView.size || document.documentSize,
+      consentRequest: document // Keep reference to check status
     };
     
     setSelectedDocument(docWithIPFS);
     setViewMode('document');
+    toast.success('✅ Document access validated');
   };
 
   const toggleFullscreen = () => {

@@ -27,9 +27,11 @@ import {
 import { useWallet } from '../context/WalletContext';
 import { useNavigate, Link } from 'react-router-dom';
 import WalletQR from '../components/WalletQR';
-import { uploadToIPFS } from '../services/ipfsService.js';
-import { storeConsentRequest, updateConsentRequest, getDocuments } from '../services/mongoService.js';
-import { getConsentRequests } from '../services/consentService';
+import { uploadToIPFS } from '../services/ipfsService';
+import { getConsentRequests, updateConsentRequest } from '../services/consentService';
+import { storeConsentRequest, getDocuments } from '../services/mongoService';
+import { revokeConsentWithPera } from '../services/peraWalletConsentService';
+import toast, { Toaster } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Dialog } from '@headlessui/react';
 
@@ -137,8 +139,39 @@ const formatFileSize = (bytes) => {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 };
 
+// Utility function to generate QR code
+const generateQRCode = async (data) => {
+  try {
+    const QRCode = await import('qrcode');
+    const qrDataUrl = await QRCode.toDataURL(JSON.stringify(data));
+    return qrDataUrl;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    return null;
+  }
+};
+
+// Utility function to generate consent link
+const generateConsentLink = (requestId) => {
+  const baseUrl = window.location.origin;
+  return `${baseUrl}/grant-consent?requestId=${requestId}`;
+};
+
+// Utility function to create notification
+const createNotification = async (notificationData) => {
+  try {
+    // You can enhance this to send actual notifications via a backend service
+    console.log('Creating notification:', notificationData);
+    // For now, just log it. In production, you'd send this to your notification service
+    return true;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return false;
+  }
+};
+
 const Dashboard = () => {
-  const { address } = useWallet();
+  const { address, peraWallet } = useWallet();
   const [stats, setStats] = useState({
     totalRequests: 0,
     activeConsents: 0,
@@ -351,7 +384,34 @@ const Dashboard = () => {
   }, [consentRequests]);
 
   const handleRevokeConsent = async (requestId) => {
+    const toastId = toast.loading('Revoking consent...');
+    
     try {
+      // ✅ STEP 1: Record revocation on blockchain first
+      try {
+        toast.loading('📱 Opening Pera Wallet to revoke on blockchain...', { id: toastId });
+        
+        if (!peraWallet) {
+          console.warn('Pera Wallet not connected, skipping blockchain revocation');
+        } else {
+          // Call smart contract to revoke consent on-chain
+          const txId = await revokeConsentWithPera({
+            sender: address,
+            peraWallet: peraWallet
+          });
+          
+          console.log('✅ Blockchain revocation transaction:', txId);
+          toast.success('✅ Revoked on blockchain!', { id: toastId });
+        }
+      } catch (blockchainError) {
+        console.error('Blockchain error:', blockchainError);
+        toast.error('⚠️ Blockchain revocation failed, continuing with database...', { id: toastId });
+        // Continue even if blockchain fails
+      }
+
+      // ✅ STEP 2: Update database
+      toast.loading('💾 Updating database...', { id: toastId });
+      
       const updateData = {
         status: 'revoked',
         revokedAt: new Date().toISOString(),
@@ -361,11 +421,14 @@ const Dashboard = () => {
       console.log('Revoking consent request with data:', updateData);
       await updateConsentRequest(requestId, updateData);
       
+      toast.success('🎉 Consent revoked successfully!', { id: toastId, duration: 5000 });
+      
       // Immediately fetch updated data
       await fetchConsentRequests();
     } catch (error) {
       console.error('Error revoking consent:', error);
       setError('Failed to revoke consent');
+      toast.error('Failed to revoke consent', { id: toastId });
     }
   };
 

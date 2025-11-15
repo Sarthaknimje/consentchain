@@ -25,6 +25,7 @@ import {
 import { useWallet } from '../context/WalletContext';
 import { getConsentRequests, updateConsentRequest, getDocuments, storeDocument } from '../services/mongoService';
 import { uploadToIPFS } from '../services/ipfsService';
+import { grantConsentWithPera } from '../services/peraWalletConsentService';
 import { QRCodeSVG } from 'qrcode.react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -331,7 +332,7 @@ const DocumentCard = ({ doc, isSelected, onSelect }) => {
 const GrantConsent = () => {
   const { requestId } = useParams();
   const navigate = useNavigate();
-  const { address } = useWallet();
+  const { address, peraWallet } = useWallet();
   const [requests, setRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showGrantModal, setShowGrantModal] = useState(false);
@@ -616,15 +617,48 @@ const GrantConsent = () => {
       }
 
       // Show loading state
-      toast.loading('Granting consent...', {
-        duration: 5000,
-      });
+      const toastId = toast.loading('Granting consent...');
 
-      // Update consent request status
+      // ✅ STEP 1: Record consent on Algorand blockchain
+      try {
+        toast.loading('📱 Opening Pera Wallet for signature...', { id: toastId });
+        
+        // Calculate expiry timestamp (default: 30 days from now)
+        const expiryTimestamp = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
+        
+        if (!peraWallet) {
+          throw new Error('Pera Wallet not initialized. Please connect your wallet first.');
+        }
+        
+        // Call smart contract to record consent on-chain
+        const txId = await grantConsentWithPera({
+          sender: address,
+          peraWallet: peraWallet,
+          expiry: expiryTimestamp,
+          permissions: {
+            view: true,
+            download: permissions.download || false,
+            share: false
+          }
+        });
+        
+        console.log('✅ Smart contract transaction:', txId);
+        toast.success('✅ Consent recorded on blockchain!', { id: toastId });
+        
+      } catch (blockchainError) {
+        console.error('Blockchain error:', blockchainError);
+        toast.error('❌ Failed to record on blockchain. Continuing with database...', { id: toastId });
+        // Continue even if blockchain fails - database will still work
+      }
+
+      // ✅ STEP 2: Update consent request in database
+      toast.loading('💾 Saving to database...', { id: toastId });
+      
       const updatedRequest = await updateConsentRequest(selectedRequest._id, {
         status: 'granted',
         grantedAt: new Date().toISOString(),
-        documents: selectedDocuments.map(doc => doc._id)
+        documents: selectedDocuments.map(doc => doc._id),
+        permissions: permissions
       });
 
       if (!updatedRequest) {
@@ -632,7 +666,8 @@ const GrantConsent = () => {
       }
 
       // Show success message
-      toast.success('Consent granted successfully!', {
+      toast.success('🎉 Consent granted successfully!', {
+        id: toastId,
         duration: 5000,
       });
 

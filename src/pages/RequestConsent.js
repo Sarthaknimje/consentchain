@@ -7,7 +7,9 @@ import { DocumentTextIcon, ArrowRightIcon, CheckIcon, CameraIcon, ArrowUpTrayIco
 import QrScanner from 'qr-scanner';
 import { storeConsentRequest } from '../services/mongoService';
 import { createConsentRequest } from '../services/consentService';
+import { requestConsentWithPera } from '../services/peraWalletConsentService';
 import { QRCodeSVG } from 'qrcode.react';
+import toast, { Toaster } from 'react-hot-toast';
 
 const documentTypes = [
   { id: 'aadhar', name: 'Aadhar Card', icon: '🪪' },
@@ -27,7 +29,7 @@ const documentTypes = [
 
 const RequestConsent = () => {
   const navigate = useNavigate();
-  const { address } = useWallet();
+  const { address, peraWallet } = useWallet();
   const [recipientAddress, setRecipientAddress] = useState('');
   const [selectedDocuments, setSelectedDocuments] = useState([]);
   const [reason, setReason] = useState('');
@@ -134,8 +136,11 @@ const RequestConsent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    
     if (!address) {
       setError('Please connect your wallet first');
+      toast.error('❌ Please connect your Pera Wallet to continue');
       return;
     }
     if (!recipientAddress) {
@@ -158,7 +163,10 @@ const RequestConsent = () => {
     setLoading(true);
     setError('');
 
+    const toastId = toast.loading('Creating consent request...');
+
     try {
+      // ✅ STEP 1: Create request in database first
       const request = await createConsentRequest({
         sender: address,
         recipient: recipientAddress,
@@ -166,6 +174,71 @@ const RequestConsent = () => {
         otherDocumentType: selectedDocuments.includes('other') ? otherDocumentType : undefined,
         reason
       });
+
+      toast.success('Request created in database!', { id: toastId });
+
+      // ✅ STEP 2: Record request on Algorand blockchain
+      try {
+        toast.loading('📱 Opening Pera Wallet to record on blockchain...', { id: toastId });
+        
+        // Check if wallet is connected and address is available
+        if (!address) {
+          console.warn('Wallet address not available, skipping blockchain recording');
+          toast.success('✅ Request created (database only - connect wallet for blockchain)', { id: toastId });
+        } else if (!peraWallet) {
+          console.warn('Pera Wallet not connected, skipping blockchain recording');
+          toast.success('✅ Request created (database only)', { id: toastId });
+        } else {
+          // Call smart contract to record request on-chain
+          const txId = await requestConsentWithPera({
+            sender: address,
+            peraWallet: peraWallet,
+            documentHash: request.requestId, // Using requestId as document hash
+            documentType: selectedDocuments.join(','),
+            requestId: request.requestId,
+            recipient: recipientAddress
+          });
+          
+          const explorerLink = `https://testnet.explorer.perawallet.app/tx/${txId}/`;
+          
+          console.log('✅ Transaction submitted:', txId);
+          console.log('🔗 View on explorer:', explorerLink);
+          
+          toast.success(
+            <div>
+              <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                🎉 SUCCESS! Transaction Submitted!
+              </div>
+              <div style={{ fontSize: '12px', marginBottom: '8px' }}>
+                Your consent request has been recorded on Algorand blockchain.
+              </div>
+              <a 
+                href={explorerLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ 
+                  color: '#3b82f6', 
+                  textDecoration: 'underline',
+                  fontSize: '12px'
+                }}
+              >
+                View Transaction on Explorer →
+              </a>
+            </div>, 
+            { 
+              id: toastId, 
+              duration: 10000,
+              style: {
+                minWidth: '400px'
+              }
+            }
+          );
+        }
+      } catch (blockchainError) {
+        console.error('Blockchain error:', blockchainError);
+        toast.error('⚠️ Blockchain recording failed, but request saved in database', { id: toastId });
+        // Continue even if blockchain fails
+      }
 
       // Generate share URL and show share options
       const baseUrl = window.location.origin;
@@ -176,6 +249,7 @@ const RequestConsent = () => {
     } catch (error) {
       console.error('Error creating consent request:', error);
       setError('Failed to create consent request. Please try again.');
+      toast.error('Failed to create request', { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -205,8 +279,10 @@ const RequestConsent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Animated background elements */}
+    <>
+      <Toaster position="top-right" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
           animate={{
@@ -603,7 +679,8 @@ const RequestConsent = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

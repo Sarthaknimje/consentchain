@@ -54,7 +54,7 @@ const ConsentsPage: React.FC = () => {
   if (!wallet.isConnected) {
     return (
       <div className="flex justify-center items-center h-64">
-        <WalletConnectButton onConnect={() => connectWallet('DUMMY_ADDRESS_FOR_DEMO')} />
+        <WalletConnectButton onConnect={connectWallet} />
       </div>
     );
   }

@@ -1,340 +1,188 @@
-# ConsentChain - Algorand-based Consent Management Platform
+# ConsentChain - Blockchain-Based Consent Management
 
-## Overview
-ConsentChain is a decentralized consent management platform built on Algorand blockchain. It enables secure, transparent, and efficient management of data sharing consents between individuals and institutions.
+A decentralized consent management system built on Algorand blockchain with Pera Wallet integration.
 
-## 🌟 Core Features
+## 🚀 Features
 
-### 1. Smart Contract Integration
-- **ConsentContract.py**: Core smart contract for managing consents
-  - Request consent
-  - Grant consent
-  - Revoke consent
-  - View document permissions
-  - Expiry management
-  - Role-based access control
+- ✅ **Blockchain Integration**: Consent requests recorded on Algorand TestNet
+- ✅ **Pera Wallet**: Secure transaction signing
+- ✅ **Smart Contract**: APP ID `749685949` deployed on Algorand
+- ✅ **Document Management**: Store and share documents with consent
+- ✅ **Expiry & Revocation**: Automatic document hiding when consent expires or is revoked
+- ✅ **IPFS Storage**: Decentralized document storage
+- ✅ **MongoDB**: Backend database for request metadata
 
-### 2. Frontend Modules
-- **Authentication & Wallet Integration**
-  - Pera Wallet integration
-  - QR code-based wallet connection
-  - Session management
-  - Role-based routing
+## 🛠️ Tech Stack
 
-- **Consent Management Interface**
-  - Request consent form
-  - Grant consent dashboard
-  - Consent history view
-  - Document viewer
-  - Permission management
+### Frontend
+- React 18
+- TypeScript
+- Tailwind CSS
+- Pera Wallet Connect SDK
+- Algorand JavaScript SDK
+- React Hot Toast
 
-- **User Dashboard**
-  - Active consents
-  - Pending requests
-  - Document library
-  - Activity logs
-  - Settings management
+### Backend
+- Node.js + Express
+- MongoDB
+- IPFS
+- Algorand SDK
 
-- **Reusable UI Components**
-  - `Input` and `TextArea`: Standardized form input fields.
-  - `Pill`: For displaying status labels.
-  - `Toggle`: An animated on/off switch.
-  - `Spinner`: A loading indicator for async operations.
-  - `Modal`: A generic modal/dialog component.
+### Blockchain
+- Algorand TestNet
+- Smart Contract (APP_ID: 749685949)
+- TEAL Language
 
-### 3. Backend Services
-- **Algorand Service** (`algorandConsentService.js`)
-  - Smart contract interaction
-  - Transaction management
-  - Account management
-  - State verification
+## 📦 Installation
 
-- **IPFS Service** (`ipfsService.js`)
-  - Document storage
-  - Content addressing
-  - Metadata management
-
-- **MongoDB Service** (`mongoService.js`)
-  - User data storage
-  - Consent records
-  - Activity logs
-  - Analytics data
-
-- **Telegram Bot Service** (`telegramBotService.js`)
-  - Notification system
-  - Consent alerts
-  - Status updates
-
-## 🛠️ Technical Architecture
-
-### 1. Smart Contracts
-```python
-# ConsentContract.py
-- approval_program(): Main contract logic
-- clear_state_program(): State clearing logic
-- Key operations:
-  - request_consent()
-  - grant_consent()
-  - revoke_consent()
-  - view_document()
-```
-
-### 2. Frontend Architecture
-```
-src/
-├── components/
-│   ├── ConsentRecord.tsx    # Consent display component
-│   ├── DigiLocker.tsx       # Document management
-│   ├── WalletConnect.js     # Wallet integration
-│   └── animations/          # UI animations
-├── pages/
-│   ├── Dashboard.js         # Main dashboard
-│   ├── GrantConsent.js      # Consent granting
-│   ├── RequestConsent.js    # Consent requesting
-│   └── ViewConsent.js       # Consent viewing
-└── services/               # Backend services
-```
-
-## 📂 Project Structure
-
-A brief overview of the key directories in the frontend application:
-
-### New Features Added
-- **Consent Management Utilities** (`src/utils/consentHelpers.js`)
-  - Validation functions for consent requests
-  - Formatting utilities for consent records
-  - ID generation and expiry checking
-  - Permission formatting helpers
-
-- **Consent Statistics Component** (`src/components/ConsentStats.js`)
-  - Real-time analytics dashboard
-  - Visual progress bars and metrics
-  - Status-based filtering and display
-  - Responsive design with Tailwind CSS
-
-- **Notification Service** (`src/services/notificationService.js`)
-  - Browser notification support
-  - Real-time alerts for consent events
-  - Customizable notification types
-  - Click handlers and auto-dismissal
-
-- **Consent State Management Hook** (`src/hooks/useConsent.js`)
-  - Comprehensive consent CRUD operations
-  - State management with React hooks
-  - Error handling and loading states
-  - Integration with notification service
-
-```
-src/
-├── api/             # Functions for interacting with the backend API
-├── assets/          # Static assets like images and SVGs
-├── components/      # Reusable React components (Buttons, Modals, etc.)
-├── constants/       # Application-wide constants
-├── contexts/        # React context providers for global state
-├── hooks/           # Custom React hooks
-├── layouts/         # Layout components (e.g., main app layout with Navbar)
-├── pages/           # Top-level page components for each route
-├── services/        # Services for interacting with external APIs (Algorand, IPFS)
-├── types/           # TypeScript type definitions
-├── utils/           # Utility functions
-├── App.tsx          # Main application component with routing
-└── index.tsx        # Application entry point
-```
-
-### 3. Backend Architecture
-```
-server/
-├── index.js               # Main server
-├── models/
-│   └── consentRequest.js  # Data models
-└── services/             # Business logic
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (v18.17.0 or as specified in `.nvmrc`)
-- Python 3.8+
-- An Algorand Testnet Account with funds
-
-### Backend & Contracts Setup
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/YashDiwan-16/algorand.git
-    cd algorand
-    ```
-
-2.  **Install Python dependencies:**
-    ```bash
-    cd contracts
-    pip install -r requirements.txt
-    ```
-
-3.  **Set up environment variables:**
-    -   Navigate to the `contracts` directory.
-    -   Copy `.env.example` to a new file named `.env`.
-    -   Fill in your `CREATOR_MNEMONIC` and `RECIPIENT_MNEMONIC`.
-
-4.  **Deploy the contracts:**
-    ```bash
-    python deploy.py
-    ```
-
-### Frontend Setup
-
-1.  **Install frontend dependencies:**
-    (From the root `algorand` directory)
-    ```bash
-    npm install
-    ```
-
-2.  **Start the development servers:**
-    This command starts both the React frontend and the Express backend concurrently.
-    ```bash
-    npm run dev
-    ```
-    The application will be available at `http://localhost:3000`.
-
-## 📱 Use Cases
-
-### 1. Healthcare
-- Secure sharing of medical records
-- Patient consent management
-- HIPAA compliance
-- Research data sharing
-
-### 2. Education
-- Academic record verification
-- Certificate sharing
-- Student data management
-- Institution collaboration
-
-### 3. Employment
-- Document verification
-- Background check consent
-- Employee data management
-- HR process automation
-
-### 4. Personal
-- Identity document sharing
-- Personal data management
-- Privacy control
-- Data portability
-
-## 🔒 Security Features
-
-1. **Blockchain Security**
-   - Immutable consent records
-   - Transparent audit trail
-   - Cryptographic verification
-   - Smart contract security
-
-2. **Data Protection**
-   - End-to-end encryption
-   - IPFS content addressing
-   - Secure key management
-   - Access control
-
-3. **Privacy Controls**
-   - Granular permissions
-   - Time-limited access
-   - Revocation capabilities
-   - Data minimization
-
-## 🛠️ Development
-
-### Testing
 ```bash
-# Run frontend tests
-npm test
+# Install dependencies
+npm install
 
-# Run smart contract tests
-python contracts/scripts/test.py
-
-# Run integration tests
-npm run test:integration
+# Install backend dependencies
+cd server && npm install && cd ..
 ```
 
-### Deployment
+## 🔧 Configuration
+
+1. Create `.env` file:
+
+```env
+# MongoDB
+MONGODB_URI=your_mongodb_connection_string
+
+# Algorand
+REACT_APP_ALGORAND_NETWORK=testnet
+REACT_APP_ALGORAND_APP_ID=749685949
+REACT_APP_ALGOD_SERVER=https://testnet-api.algonode.cloud
+
+# IPFS (optional)
+IPFS_HOST=ipfs.infura.io
+IPFS_PORT=5001
+IPFS_PROTOCOL=https
+```
+
+## 🚀 Running Locally
+
 ```bash
-# Deploy to mainnet
-python contracts/scripts/deploy.py --network mainnet
+# Start backend server (port 5001)
+npm run server
 
-# Build frontend
-npm run build
+# Start frontend (port 3000)
+npm start
 
-# Deploy frontend
-npm run deploy
+# Or run both concurrently
+npm run dev
 ```
 
-## 📊 API Documentation
+## 📱 Pera Wallet Integration
 
-### Smart Contract Methods
-```python
-# Request Consent
-request_consent(document_hash, document_type, request_id, requester)
-
-# Grant Consent
-grant_consent(expiry, permissions)
-
-# Revoke Consent
-revoke_consent()
-
-# View Document
-view_document()
-```
-
-### REST API Endpoints
+### Connect Wallet
 ```javascript
-// Consent Management
-POST /api/consent/request
-GET /api/consent/:id
-PUT /api/consent/:id/grant
-DELETE /api/consent/:id
+import { useWallet } from './context/WalletContext';
 
-// Document Management
-POST /api/document/upload
-GET /api/document/:id
-DELETE /api/document/:id
+const { address, peraWallet, connectWallet } = useWallet();
 
-// User Management
-GET /api/user/profile
-PUT /api/user/settings
+// Connect
+await connectWallet();
 ```
 
-## 🤝 Contributing
+### Send Transaction
+```javascript
+import { requestConsentWithPera } from './services/peraWalletConsentService';
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
+const txId = await requestConsentWithPera({
+  sender: address,
+  peraWallet: peraWallet,
+  documentHash: 'hash',
+  documentType: 'medical',
+  requestId: 'id',
+  recipient: 'ALGO_ADDRESS'
+});
+```
+
+## 🎯 Consent Flow
+
+1. **Request Consent**
+   - User A requests consent from User B
+   - Transaction recorded on Algorand blockchain
+   - Notification sent to User B
+
+2. **Grant Consent**
+   - User B reviews and grants consent
+   - Expiry time set (e.g., 30 days)
+   - Permissions specified (view, download)
+   - Transaction recorded on blockchain
+
+3. **Access Document**
+   - User A can access document while consent is active
+   - System validates: not expired, not revoked
+   - Each view triggers blockchain transaction
+
+4. **Revoke Consent**
+   - Either party can revoke consent
+   - Document immediately becomes inaccessible
+   - Transaction recorded on blockchain
+
+## 🔐 Smart Contract Functions
+
+- `request_consent`: Create consent request
+- `grant_consent`: Grant consent with expiry
+- `view_document`: Verify and record document access
+- `revoke_consent`: Revoke active consent
+
+## 🌐 Deployment
+
+### Vercel Deployment
+
+1. Push to GitHub
+2. Import to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy!
+
+### Environment Variables for Vercel
+```
+MONGODB_URI=your_mongodb_atlas_connection
+NODE_ENV=production
+```
+
+## 📊 Project Structure
+
+```
+algorand/
+├── contracts/           # Smart contract TEAL files
+│   ├── consent_contract.teal
+│   └── deploy_consent.py
+├── server/             # Backend API
+│   ├── index.js
+│   └── models/
+├── src/
+│   ├── components/     # React components
+│   ├── context/        # WalletContext
+│   ├── pages/          # Main pages
+│   ├── services/       # API & blockchain services
+│   └── utils/          # Helper functions
+└── public/
+```
+
+## 🔗 Links
+
+- **Smart Contract**: [View on AlgoExplorer](https://testnet.algoexplorer.io/application/749685949)
+- **GitHub**: https://github.com/Sarthaknimje/consentchain
+- **Live Demo**: [Your Vercel URL]
+
+## 👨‍💻 Developer
+
+**Sarthak Nimje**  
+Email: sarthaknimje@gmail.com  
+GitHub: [@Sarthaknimje](https://github.com/Sarthaknimje)
 
 ## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+MIT License
 
 ## 🙏 Acknowledgments
+
 - Algorand Foundation
 - Pera Wallet Team
-- React Community
-- TailwindCSS Team
-
-## Telegram Bot Integration
-
-ConsentChain now offers a seamless integration with Telegram! You can interact with the platform directly from your favorite messaging app using our official bot:
-
-- **Bot Username:** [@consent_bot](https://t.me/consent_bot)
-- **Features:**
-  - Manage your data consents
-  - Receive real-time notifications
-  - Approve or reject requests
-  - And more—all from Telegram!
-
-To get started, visit the new **Telegram Bot** page in the app navigation or [click here](https://t.me/consent_bot).
-
-## FAQ
-
-### How do I use the ConsentChain Telegram bot?
-
-Visit the new **Telegram Bot** page in the app or go to [@consent_bot](https://t.me/consent_bot) on Telegram. Follow the instructions to link your account and manage your data consents directly from Telegram.
+- Algonode for free API access

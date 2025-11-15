@@ -28,7 +28,7 @@ const Navbar: React.FC = () => {
               <button onClick={disconnectWallet} className="bg-red-500 px-3 py-1 rounded">Disconnect</button>
             </div>
           ) : (
-            <WalletConnectButton onConnect={() => connectWallet('DUMMY_ADDRESS_FOR_DEMO')} />
+            <WalletConnectButton onConnect={connectWallet} />
           )}
         </div>
       </div>
