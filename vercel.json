@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "consentchain",
   "builds": [
     {
       "src": "package.json",
@@ -10,7 +11,10 @@
     },
     {
       "src": "server/index.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
@@ -19,12 +23,28 @@
       "dest": "server/index.js"
     },
     {
-      "src": "/(.*)",
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*\\.(?:js|css|json|ico|png|jpg|jpeg|svg|woff|woff2|ttf|eot))",
       "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "REACT_APP_ALGORAND_NETWORK": "testnet",
+    "REACT_APP_ALGORAND_APP_ID": "749685949",
+    "REACT_APP_ALGOD_SERVER": "https://testnet-api.algonode.cloud"
+  },
+  "functions": {
+    "server/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
   }
 }
-
