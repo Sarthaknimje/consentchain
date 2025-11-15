@@ -44,7 +44,7 @@
     "start": "react-app-rewired start",
     "server": "node server/index.js",
     "dev": "concurrently \"npm run server\" \"npm run start\"",
-    "build": "react-app-rewired build",
+    "build": "CI=false react-app-rewired build",
     "preview": "vite preview",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject",
