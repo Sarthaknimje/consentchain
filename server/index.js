@@ -22,17 +22,25 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// MongoDB connection
-const uri = 'mongodb://localhost:27017/consentchain';
+// MongoDB connection - use environment variable or fallback to localhost for development
+const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/consentchain';
+
+console.log('MongoDB URI:', uri ? `${uri.substring(0, 20)}...` : 'Not set');
 
 // Connect to MongoDB using Mongoose
-mongoose.connect(uri)
+mongoose.connect(uri, {
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+})
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log('✅ Connected to MongoDB');
   })
   .catch((error) => {
-    console.error('MongoDB connection error:', error);
-    process.exit(1);
+    console.error('❌ MongoDB connection error:', error);
+    // Don't exit in serverless - just log the error
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
   });
 
 // Create Document Schema
