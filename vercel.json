@@ -32,6 +32,7 @@
     }
   ],
   "env": {
+    "CI": "false",
     "NODE_ENV": "production",
     "REACT_APP_ALGORAND_NETWORK": "testnet",
     "REACT_APP_ALGORAND_APP_ID": "749685949",
