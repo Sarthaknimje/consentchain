@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5001/api';
+// Use environment variable or default to relative path for production
+const API_URL = process.env.REACT_APP_API_URL || '/api';
 
 const handleResponse = async (response) => {
   if (!response.ok) {

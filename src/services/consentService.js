@@ -1,6 +1,7 @@
 import { storeConsentRequest } from './mongoService.js';
 
-const API_URL = 'http://localhost:5001/api';
+// Use environment variable or default to relative path for production
+const API_URL = process.env.REACT_APP_API_URL || '/api';
 
 export const getConsentRequests = async (address, type = 'all') => {
   try {
